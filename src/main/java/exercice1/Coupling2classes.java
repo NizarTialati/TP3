@@ -98,8 +98,7 @@ public class Coupling2classes extends AbstractMain {
 
 			for (String calledMethodName : invocation.keySet()) {
 
-				if (graphB.getMethods().stream().filter(m -> m.contains("::")).collect(Collectors.toList())
-						.contains(classB + "::" + calledMethodName)) {
+				if (graphB.getMethods().stream().filter(m -> m.equals(classB + "::" + calledMethodName)).collect(Collectors.toList()).size() > 0 ) {
 					res += invocation.get(calledMethodName);
 				}
 			}
@@ -109,8 +108,8 @@ public class Coupling2classes extends AbstractMain {
 
 			for (String calledMethodName : invocation.keySet()) {
 
-				if (graphA.getMethods().stream().filter(m -> m.contains("::")).collect(Collectors.toList())
-						.contains(classA + "::" + calledMethodName)) {
+				if (graphA.getMethods().stream().filter(m -> m.equals(classA + "::" + calledMethodName)).collect(Collectors.toList()).size() > 0 ) {
+					
 					res += invocation.get(calledMethodName);
 				}
 			}

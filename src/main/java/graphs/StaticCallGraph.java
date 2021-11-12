@@ -138,9 +138,10 @@ public class StaticCallGraph extends CallGraph {
 		if (invocationNameClass != null) {
 
 			invocationName += invocationNameClass.getReference().getDeclaringType().getSimpleName() + "::";
+			invocationName += invocationNameClass.getReference().getSimpleName();
 		}
 
-		invocationName += invocationNameClass.getReference().getSimpleName();
+		
 
 		return invocationName;
 	}
