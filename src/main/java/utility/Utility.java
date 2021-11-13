@@ -1,11 +1,15 @@
 package utility;
 
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.IMethodBinding;
+import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.MethodInvocation;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 public class Utility {
-	
 	public static String getClassFullyQualifiedName(TypeDeclaration typeDeclaration) {
 		String name = typeDeclaration.getName().getIdentifier();
 		
@@ -19,12 +23,80 @@ public class Utility {
 		return name;
 	}
 	
-	public static String getMethodFullyQualifiedName(TypeDeclaration cls, MethodDeclaration method) {
-		StringBuffer buffer = new StringBuffer();
-		buffer.append(getClassFullyQualifiedName(cls));
-		buffer.append("::");
-		buffer.append(method.getName());
+	public static String getMethodFullyQualifiedName(MethodDeclaration method) {
+		StringBuilder builder = new StringBuilder();
+		builder.append(getClassFullyQualifiedName((TypeDeclaration)method.getParent()));
+		builder.append("::");
+		builder.append(method.getName() + "(");
 		
-		return buffer.toString();
+		if (!method.parameters().isEmpty()) {
+			for (Object param: method.parameters()) {
+				SingleVariableDeclaration parameter = (SingleVariableDeclaration) param;
+				ITypeBinding typeBinding = parameter.getType().resolveBinding();
+				builder.append(typeBinding.getQualifiedName() + ", ");
+			}
+			
+			removeStringBuilderTrailingComma(builder);
+		}
+		
+		builder.append(")");
+		
+		return builder.toString();
+	}
+
+	public static String getMethodInvocationDefaultFormat(MethodInvocation methodInvocation) {
+		/* declaringTypeFQN.method([argTypes]) */
+		StringBuilder builder = new StringBuilder();
+		IMethodBinding invokedMethod = methodInvocation.resolveMethodBinding();
+		
+		if (invokedMethod != null) {
+			// get the declaring type FQN
+			ITypeBinding declaringType = invokedMethod.getDeclaringClass();
+			builder.append(declaringType.getQualifiedName());
+			builder.append("::");
+			
+			// get the method signature
+			builder.append(invokedMethod.getName() + "(");
+			
+			// get the argument types
+			if (!methodInvocation.arguments().isEmpty()) {
+				for (ITypeBinding argumentType: invokedMethod.getParameterTypes())
+					builder.append(argumentType.getQualifiedName()+", ");
+				removeStringBuilderTrailingComma(builder);
+			}
+		}
+		
+		builder.append(")");
+		return builder.toString();
+	}
+	
+	public static String getMethodSuperInvocationDefaultFormat(SuperMethodInvocation superMethodInvocation) {
+		StringBuilder builder = new StringBuilder();
+		IMethodBinding invokedMethod = superMethodInvocation.resolveMethodBinding();
+		
+		if (invokedMethod != null) { // the invoked super method
+			// get the declaring type FQN
+			ITypeBinding declaringType = invokedMethod.getDeclaringClass();
+			builder.append(declaringType.getQualifiedName());
+			builder.append("::");
+			
+			// get the method signature
+			builder.append(invokedMethod.getName() + "(");
+			
+			// get the argument types
+			if (!superMethodInvocation.arguments().isEmpty()) {
+				for (ITypeBinding argumentType: invokedMethod.getParameterTypes())
+					builder.append(argumentType.getQualifiedName()+", ");
+				removeStringBuilderTrailingComma(builder);
+			}
+		}
+		
+		builder.append(")");
+		return builder.toString();
+	}
+	
+	public static void removeStringBuilderTrailingComma(StringBuilder builder) {
+		builder.delete(builder.toString().length() - 2, 
+				builder.toString().length());
 	}
 }

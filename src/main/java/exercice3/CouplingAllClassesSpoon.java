@@ -10,15 +10,9 @@ import spoon.reflect.CtModel;
 
 public class CouplingAllClassesSpoon {
 
-	public static void main(String[] args) {
+	public static void couplingAllClassesSpoon(String projectPath) {
 		
-
 		try {
-			Scanner sc = new Scanner(System.in);
-			System.out.println("Enter project path : ");
-
-			String projectPath = sc.nextLine();
-			sc.close();
 			
 			System.out.println("Calculation in progress ...");
 			

@@ -7,13 +7,18 @@ import java.util.List;
 public abstract class Parser<T> {
 	/* ATTRIBUTES */
 	protected String projectPath;
+	protected String projectSrcPath;
+	protected String projectBinPath;
 	protected String jrePath;
 	protected T parser;
 	
 	/* CONSTRUCTOR */
 	public Parser(String projectPath) {
 		setProjectPath(projectPath);
-		setJREPath(System.getProperty("java.home"));
+		setProjectSrcPath(projectPath+"/src/");
+		setProjectBinPath(projectPath+"/bin/");
+		setJrePath(System.getProperty("java.home"));
+		
 		configure();
 	}
 	
@@ -26,12 +31,28 @@ public abstract class Parser<T> {
 		this.projectPath = projectPath;
 	}
 	
-	public String getJREPath() {
+	public String getProjectSrcPath() {
+		return projectSrcPath;
+	}
+	
+	private void setProjectSrcPath(String projectSrcPath) {
+		this.projectSrcPath = projectSrcPath;
+	}
+	
+	public String getJrePath() {
 		return jrePath;
 	}
 	
-	public void setJREPath(String jrePath) {
+	public void setJrePath(String jrePath) {
 		this.jrePath = jrePath;
+	}
+	
+	public String getProjectBinPath() {
+		return projectBinPath;
+	}
+	
+	private void setProjectBinPath(String projectBinPath) {
+		this.projectBinPath = projectBinPath;
 	}
 	
 	public T getParser() {
@@ -56,7 +77,7 @@ public abstract class Parser<T> {
 	}
 	
 	public List<File> listJavaProjectFiles(){
-		return listJavaFiles(getProjectPath());
+		return listJavaFiles(getProjectSrcPath());
 	}
 	
 	public abstract void configure();

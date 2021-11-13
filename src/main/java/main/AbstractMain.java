@@ -12,34 +12,27 @@ public abstract class AbstractMain {
 	
 	protected static void setTestProjectPath(BufferedReader inputReader) 
 			throws IOException {
-		File projectFolder;
 		
-		System.out.println("Please provide the path to a java project's src/ folder: ");
-		TEST_PROJECT_PATH = inputReader.readLine();
-		projectFolder = new File(TEST_PROJECT_PATH);
-		
-		while (!projectFolder.exists() || !TEST_PROJECT_PATH.endsWith("src/")) {
-			System.err.println("Error: "+TEST_PROJECT_PATH+
-					" either doesn't exist or isn't a java project src/ folder. "
-					+ "Please try again: ");
-			TEST_PROJECT_PATH = inputReader.readLine();
-			projectFolder = new File(TEST_PROJECT_PATH);
-		}
+		System.out.println("Please provide the path to a java project folder: ");
+		String userInput = inputReader.readLine();
+		verifyTestProjectPath(inputReader, userInput);
 	}
 	
 	protected static void verifyTestProjectPath(BufferedReader inputReader, 
 			String userInput) throws IOException {
-		File projectFolder = new File(userInput);
 		
-		while (!projectFolder.exists() || !userInput.endsWith("src/")) {
+		while (!isJavaProject(userInput)) {
 			System.err.println("Error: "+userInput+
-					" either doesn't exist or isn't a java project src/ folder. "
+					" either doesn't exist or isn't a java project folder. "
 					+ "Please try again: ");
 			userInput = inputReader.readLine();
-			projectFolder = new File(userInput);
 		}
 		
 		TEST_PROJECT_PATH = userInput;
+	}
+	
+	protected static boolean isJavaProject(String projectPath) {
+		return new File(projectPath+"/src/").exists();
 	}
 	
 	protected abstract void menu();

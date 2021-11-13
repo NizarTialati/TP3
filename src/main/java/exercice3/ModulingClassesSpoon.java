@@ -11,24 +11,10 @@ import spoon.reflect.CtModel;
 
 public class ModulingClassesSpoon {
 
-	public static void main(String[] args) {
-
-		Scanner sc = new Scanner(System.in);
-		System.out.println("Enter project path : ");
-
-		String projectPath = sc.nextLine();
-
-		sc.close();
+	public static void modulingClassesSpoon(String projectPath) {
 		
-		// Creation de Spoon
-		Launcher spoon = new Launcher();
-		spoon.addInputResource(projectPath);
+		IGroupElement cluster = ClusteringClassesSpoon.createClusters(projectPath);
 
-		CtModel model = spoon.buildModel();
-		
-		IGroupElement cluster = ClusteringClassesSpoon.createClusters(model);
-
-		System.out.println("\nStart moduling ... \n");
 		moduling(cluster);
 
 	}

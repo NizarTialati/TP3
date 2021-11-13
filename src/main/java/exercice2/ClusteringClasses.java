@@ -3,7 +3,6 @@ package exercice2;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 import exercice1.Coupling2classes;
 import exercice2.Models.Cluster;
@@ -12,18 +11,6 @@ import exercice2.Models.IGroupElement;
 
 public class ClusteringClasses {
 
-	public static void main(String[] args) {
-
-		Scanner sc = new Scanner(System.in);
-		System.out.println("Enter project path : ");
-
-		String projectPath = sc.nextLine();
-
-		sc.close();
-		
-		createClusters(projectPath);
-		
-	}
 	
 	/**
 	 * Récupère les classes sous forme d'éléments de couplage.
@@ -109,7 +96,8 @@ public class ClusteringClasses {
 	 * @return Le regroupement.
 	 */
 	public static IGroupElement createClusters(String projectPath) {
-
+		
+		
 		List<IGroupElement> groupElements = getIGroupElements(projectPath);
 		
 		List<IGroupElement> possibleClusters = getCoupling(projectPath, groupElements);

@@ -4,25 +4,26 @@ import java.io.IOException;
 import java.util.List;
 
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.MethodInvocation;
 import org.eclipse.jdt.core.dom.SuperMethodInvocation;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 
+import spoon.reflect.CtModel;
 import spoon.reflect.code.CtInvocation;
 import spoon.reflect.code.CtSuperAccess;
 import spoon.reflect.declaration.CtExecutable;
 import spoon.reflect.declaration.CtMethod;
 import spoon.reflect.declaration.CtType;
 import spoon.reflect.visitor.filter.TypeFilter;
+import utility.Utility;
 import visitors.ClassDeclarationsCollector;
 import visitors.MethodDeclarationsCollector;
 import visitors.MethodInvocationsCollector;
 
 public class StaticCallGraph extends CallGraph {
 
-	/* CONSTRUCTOR */
+	/* CONSTRUCTORS */
 	public StaticCallGraph(String projectPath) {
 		super(projectPath);
 	}
@@ -38,11 +39,12 @@ public class StaticCallGraph extends CallGraph {
 		cUnit.accept(classCollector);
 
 		for (TypeDeclaration cls : classCollector.getClasses()) {
+			graph.addClass(cls);
 			MethodDeclarationsCollector methodCollector = new MethodDeclarationsCollector();
 			cls.accept(methodCollector);
 
 			for (MethodDeclaration method : methodCollector.getMethods())
-				graph.addMethodAndInvocations(cls, method);
+				graph.addInvocations(cls, method);
 		}
 
 		return graph;
@@ -53,31 +55,79 @@ public class StaticCallGraph extends CallGraph {
 
 		for (CompilationUnit cUnit : graph.parser.parseProject()) {
 			StaticCallGraph partial = StaticCallGraph.createCallGraph(projectPath, cUnit);
-			graph.addMethods(partial.getMethods());
+			graph.addClasses(partial.getClasses());
+			graph.addNodes(partial.getNodes());
 			graph.addInvocations(partial.getInvocations());
+			graph.addMethodDeclarationsMappings(partial.getMethodDeclarationsMap());
 		}
 
 		return graph;
 	}
 
-	public boolean addMethodAndInvocations(TypeDeclaration cls, MethodDeclaration method) {
-		if (method.getBody() != null) {
-			String methodName = cls.getName().toString() + "::" + method.getName().toString();
-			this.addMethod(methodName);
-			MethodInvocationsCollector invocationCollector = new MethodInvocationsCollector();
-			this.addInvocations(cls, method, methodName, invocationCollector);
-			//this.addSuperInvocations(methodName, invocationCollector);
+	public static StaticCallGraph createCallGraph(String projectPath, String className) throws IOException {
+		StaticCallGraph graph = new StaticCallGraph(projectPath);
+
+		for (CompilationUnit cUnit : graph.parser.parseProject()) {
+
+			StaticCallGraph partial = new StaticCallGraph(projectPath);
+			ClassDeclarationsCollector classCollector = new ClassDeclarationsCollector();
+			cUnit.accept(classCollector);
+
+			TypeDeclaration aClass = classCollector.getClasses().stream()
+					.filter(c -> c.getName().toString().equals(className)).findFirst().orElse(null);
+
+			if (aClass != null) {
+				partial.addClass(aClass);
+
+				MethodDeclarationsCollector methodCollector = new MethodDeclarationsCollector();
+				aClass.accept(methodCollector);
+
+				for (MethodDeclaration method : methodCollector.getMethods()) {
+
+					partial.addInvocations(aClass, method);
+
+				}
+
+				graph.addClasses(partial.getClasses());
+				graph.addNodes(partial.getNodes());
+				graph.addInvocations(partial.getInvocations());
+				graph.addMethodDeclarationsMappings(partial.getMethodDeclarationsMap());
+			}
 		}
 
-		return method.getBody() != null;
+		return graph;
+	}
+
+	public static StaticCallGraph createCallGraphSpoon(String classA, CtModel model) {
+
+		StaticCallGraph graph = new StaticCallGraph();
+
+		StaticCallGraph partial = new StaticCallGraph();
+
+		CtType<?> aClass = model.getAllTypes().stream().filter(cl -> cl.getReference().getSimpleName().equals(classA))
+				.findFirst().orElse(null);
+
+		if (aClass != null) {
+
+			for (CtMethod<?> m : aClass.getMethods()) {
+
+				partial.addMethodAndInvocationsSpoon(aClass, m);
+			}
+
+			graph.addNodes(partial.getNodes());
+			graph.addInvocations(partial.getInvocations());
+
+		}
+
+		return graph;
 	}
 
 	public boolean addMethodAndInvocationsSpoon(CtType<?> cls, CtMethod<?> method) {
 
 		if (method.getBody() != null) {
-			String methodName = cls.getReference().getSimpleName() + "::" + method.getSimpleName();
+			String methodName = cls.getReference().getQualifiedName() + "::" + method.getSimpleName();
 
-			this.addMethod(methodName);
+			this.addNode(methodName);
 			List<CtInvocation<?>> invocationCollector = method.getElements(new TypeFilter<>(CtInvocation.class));
 			this.addInvocationsSpoon(cls, method, methodName, invocationCollector);
 
@@ -93,41 +143,15 @@ public class StaticCallGraph extends CallGraph {
 
 	}
 
-	private void addInvocations(TypeDeclaration cls, MethodDeclaration method, String methodName,
-			MethodInvocationsCollector invocationCollector) {
-		method.accept(invocationCollector);
-
-		for (MethodInvocation invocation : invocationCollector.getMethodInvocations()) {
-			String invocationName = getMethodInvocationName(cls, invocation);
-			this.addMethod(invocationName);
-			this.addInvocation(methodName, invocationName);
-		}
-	}
-
 	private void addInvocationsSpoon(CtType<?> cls, CtMethod<?> method, String methodName,
 			List<CtInvocation<?>> invocationCollector) {
 
 		for (CtInvocation<?> invocation : invocationCollector) {
 
 			String invocationName = getMethodInvocationNameSpoon(cls, invocation);
-			this.addMethod(invocationName);
-			this.addInvocation(methodName, invocationName);
+
+			this.addInvocationSpoon(methodName, invocationName);
 		}
-	}
-
-	private String getMethodInvocationName(TypeDeclaration cls, MethodInvocation invocation) {
-		String invocationName = "";
-
-		IMethodBinding invocationMethod = invocation.resolveMethodBinding();
-
-		if (invocationMethod != null) {
-
-			invocationName += invocationMethod.getDeclaringClass().getName().toString() + "::";
-		}
-
-		invocationName += invocation.getName().toString();
-
-		return invocationName;
 	}
 
 	private String getMethodInvocationNameSpoon(CtType<?> cls, CtInvocation<?> invocation) {
@@ -137,29 +161,46 @@ public class StaticCallGraph extends CallGraph {
 
 		if (invocationNameClass != null) {
 
-			invocationName += invocationNameClass.getReference().getDeclaringType().getSimpleName() + "::";
+			invocationName += invocationNameClass.getReference().getDeclaringType().getQualifiedName() + "::";
 			invocationName += invocationNameClass.getReference().getSimpleName();
 		}
 
-		
-
 		return invocationName;
-	}
-
-	private void addSuperInvocations(String methodName, MethodInvocationsCollector invocationCollector) {
-		for (SuperMethodInvocation superInvocation : invocationCollector.getSuperMethodInvocations()) {
-			String superInvocationName = superInvocation.getName().getFullyQualifiedName();
-			this.addMethod(superInvocationName);
-			this.addInvocation(methodName, superInvocationName);
-		}
 	}
 
 	private void addSuperInvocationsSpoon(String methodName, List<CtSuperAccess<?>> invocationCollector) {
 		for (CtSuperAccess<?> superInvocation : invocationCollector) {
 			String superInvocationName = superInvocation.toString();
-			this.addMethod(superInvocationName);
-			this.addInvocation(methodName, superInvocationName);
+			this.addNode(superInvocationName);
+			this.addInvocationSpoon(methodName, superInvocationName);
 		}
 	}
 
+	private boolean addInvocations(TypeDeclaration cls, MethodDeclaration methodDeclaration) {
+		if (methodDeclaration.getBody() != null) {
+			MethodInvocationsCollector invocationCollector = new MethodInvocationsCollector();
+
+			this.addNode(Utility.getMethodFullyQualifiedName(methodDeclaration));
+			this.addInvocations(cls, methodDeclaration, invocationCollector);
+			this.addSuperInvocations(methodDeclaration, invocationCollector);
+
+		}
+
+		return methodDeclaration.getBody() != null;
+	}
+
+	private void addInvocations(TypeDeclaration cls, MethodDeclaration method,
+			MethodInvocationsCollector invocationCollector) {
+		method.accept(invocationCollector);
+		for (MethodInvocation invocation : invocationCollector.getMethodInvocations()) {
+
+			this.addInvocation(method, invocation);
+		}
+
+	}
+
+	private void addSuperInvocations(MethodDeclaration method, MethodInvocationsCollector invocationCollector) {
+		for (SuperMethodInvocation superInvocation : invocationCollector.getSuperMethodInvocations())
+			this.addInvocation(method, superInvocation);
+	}
 }

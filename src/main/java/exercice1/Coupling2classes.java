@@ -8,97 +8,44 @@ import java.util.Scanner;
 import java.util.stream.Collectors;
 
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.MethodDeclaration;
-import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 import graphs.StaticCallGraph;
-import main.AbstractMain;
 import visitors.ClassDeclarationsCollector;
-import visitors.MethodDeclarationsCollector;
 
-public class Coupling2classes extends AbstractMain {
+public class Coupling2classes{
 
-	public static void main(String[] args) {
-
-		// path projet : /home/tialati/Master_2/Evolution_restructuration/TP3/src/
+	public static void coupling2classes(String projectPath, String classA, String classB) {
 		try {
-			Scanner sc = new Scanner(System.in);
-			System.out.println("Enter project path : ");
+			// path project : /home/tialati/Master_2/Evolution_restructuration/design_patterns/design_patterns/src
 
-			String projectPath = sc.nextLine();
-
-			System.out.println("Enter the name of first class : ");
-
-			String classA = sc.nextLine();
-
-			System.out.println("Enter the name of second class : ");
-
-			String classB = sc.nextLine();
-			sc.close();
-			
 			System.out.println("Calculation in progress ...");
 
-			int coupling2classes = calculateNumerator(classA, classB, projectPath);
-			int allCoupling = calculateCoupling(projectPath);
+			int coupling2classes = Coupling2classes.calculateNumerator(classA, classB, projectPath);
+			int allCoupling = Coupling2classes.calculateCoupling(projectPath);
 
 			System.out.println("Number of relation(s) between 2 classes : " + coupling2classes);
 			System.out.println("Number of total relation(s) : " + allCoupling);
 
 			double coupling = (Double.valueOf(coupling2classes) / Double.valueOf(allCoupling)) * 100;
 
-			System.out.println("Coupling metric : " + String.format("%.2f", coupling) + " %");
-
+			System.out.println("Coupling metric : " + String.format("%.2f", coupling) + " %\n");
+			
 		} catch (IOException e) {
 			e.printStackTrace();
 		}
-	}
-
-	public static StaticCallGraph createCallGraph(String projectPath, String classname) throws IOException {
-
-		StaticCallGraph graph = new StaticCallGraph(projectPath);
-
-		for (CompilationUnit cUnit : graph.getParser().parseProject()) {
-
-			StaticCallGraph partial = new StaticCallGraph(projectPath);
-			ClassDeclarationsCollector classCollector = new ClassDeclarationsCollector();
-			cUnit.accept(classCollector);
-
-			TypeDeclaration aClass = classCollector.getClasses().stream()
-					.filter(c -> c.getName().toString().equals(classname)).findFirst().orElse(null);
-
-			if (aClass != null) {
-
-				MethodDeclarationsCollector methodCollector = new MethodDeclarationsCollector();
-				aClass.accept(methodCollector);
-
-				for (MethodDeclaration method : methodCollector.getMethods()) {
-					partial.addMethodAndInvocations(aClass, method);
-
-				}
-
-				graph.addMethods(partial.getMethods());
-				graph.addInvocations(partial.getInvocations());
-			}
-		}
-
-		return graph;
-	}
-
-	@Override
-	protected void menu() {
 
 	}
-
+	
 	public static int calculateNumerator(String classA, String classB, String projectPath) throws IOException {
-		StaticCallGraph graphA = createCallGraph(projectPath, classA);
-		StaticCallGraph graphB = createCallGraph(projectPath, classB);
+		StaticCallGraph graphA = StaticCallGraph.createCallGraph(projectPath, classA);
+		StaticCallGraph graphB = StaticCallGraph.createCallGraph(projectPath, classB);
 
 		int res = 0;
 		for (Map<String, Integer> invocation : graphA.getInvocations().values()) {
 
 			for (String calledMethodName : invocation.keySet()) {
-
-				if (graphB.getMethods().stream().filter(m -> m.equals(classB + "::" + calledMethodName)).collect(Collectors.toList()).size() > 0 ) {
+				
+				if (graphB.getNodes().stream().filter(m -> m.equals(calledMethodName)).collect(Collectors.toList()).size() > 0 ) {
 					res += invocation.get(calledMethodName);
 				}
 			}
@@ -108,7 +55,7 @@ public class Coupling2classes extends AbstractMain {
 
 			for (String calledMethodName : invocation.keySet()) {
 
-				if (graphA.getMethods().stream().filter(m -> m.equals(classA + "::" + calledMethodName)).collect(Collectors.toList()).size() > 0 ) {
+				if (graphA.getNodes().stream().filter(m -> m.equals(calledMethodName)).collect(Collectors.toList()).size() > 0 ) {
 					
 					res += invocation.get(calledMethodName);
 				}
@@ -146,6 +93,7 @@ public class Coupling2classes extends AbstractMain {
 	}
 
 	public static int calculateCoupling(String projectPath) throws IOException {
+		
 		int res = 0;
 		for (String a : getClasses(projectPath)) {
 			for (String b : getClasses(projectPath)) {

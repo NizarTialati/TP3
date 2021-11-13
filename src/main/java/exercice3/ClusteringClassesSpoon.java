@@ -13,24 +13,6 @@ import spoon.reflect.CtModel;
 
 public class ClusteringClassesSpoon {
 
-	public static void main(String[] args) {
-
-		Scanner sc = new Scanner(System.in);
-		System.out.println("Enter project path : ");
-
-		String projectPath = sc.nextLine();
-
-		sc.close();
-
-		// Creation de Spoon
-		Launcher spoon = new Launcher();
-		spoon.addInputResource(projectPath);
-
-		CtModel model = spoon.buildModel();
-
-		createClusters(model);
-
-	}
 
 	/**
 	 * Récupère les classes sous forme d'éléments de couplage.
@@ -117,7 +99,13 @@ public class ClusteringClassesSpoon {
 	 * @param model Le modèle Spoon.
 	 * @return Le regroupement.
 	 */
-	public static IGroupElement createClusters(CtModel model) {
+	public static IGroupElement createClusters(String projectPath) {
+
+		// Creation de Spoon
+		Launcher spoon = new Launcher();
+		spoon.addInputResource(projectPath);
+
+		CtModel model = spoon.buildModel();
 
 		List<IGroupElement> groupElements = getIGroupElements(model);
 

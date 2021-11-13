@@ -3,21 +3,14 @@ package exercice1;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 
 public class CouplingAllClasses {
 
-	public static void main(String[] args) {
+	public static void couplingAllClasses(String projectPath) {
 		
 
 		try {
-			Scanner sc = new Scanner(System.in);
-			System.out.println("Enter project path : ");
-
-			String projectPath = sc.nextLine();
-
-			sc.close();
-
+			
 			System.out.println("Calculation in progress ...");
 			
 			List<String> classNames = Coupling2classes.getClasses(projectPath);
@@ -41,6 +34,8 @@ public class CouplingAllClasses {
 				
 				observedClasses.add(classNameA);
 			}
+			
+			System.out.print("\n");
 
 		} catch (IOException e) {
 			e.printStackTrace();
