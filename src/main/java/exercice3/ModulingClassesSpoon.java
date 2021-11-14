@@ -2,18 +2,15 @@ package exercice3;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 import java.util.Stack;
 
 import exercice2.Models.IGroupElement;
-import spoon.Launcher;
-import spoon.reflect.CtModel;
 
 public class ModulingClassesSpoon {
 
 	public static void modulingClassesSpoon(String projectPath) {
 		
-		IGroupElement cluster = ClusteringClassesSpoon.createClusters(projectPath);
+		IGroupElement cluster = ClusteringClassesSpoon.createClustersSpoon(projectPath);
 
 		moduling(cluster);
 
@@ -69,6 +66,7 @@ public class ModulingClassesSpoon {
 
 			
 		}
+		System.out.println("\n");
 	}
 
 }

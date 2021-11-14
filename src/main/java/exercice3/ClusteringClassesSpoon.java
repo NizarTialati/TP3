@@ -3,11 +3,13 @@ package exercice3;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
+import java.util.stream.Collectors;
 
+import exercice1.Coupling2classes;
 import exercice2.Models.Cluster;
 import exercice2.Models.ClusteringClass;
 import exercice2.Models.IGroupElement;
+import graphs.StaticCallGraph;
 import spoon.Launcher;
 import spoon.reflect.CtModel;
 
@@ -20,10 +22,11 @@ public class ClusteringClassesSpoon {
 	 * @param model Le modèle Spoon.
 	 * @return Les éléments de couplage.
 	 */
-	private static List<IGroupElement> getIGroupElements(CtModel model) {
+	private static List<IGroupElement> getIGroupElements(StaticCallGraph graph) {
 
 		List<IGroupElement> groups = new ArrayList<>();
-		List<String> classNames = Coupling2classesSpoon.getClassesSpoon(model);
+		List<String> classNames = graph.getClassesSpoon().stream().map(c -> c.getQualifiedName()).collect(Collectors.toList());
+		
 
 		for (String className : classNames) {
 
@@ -33,7 +36,7 @@ public class ClusteringClassesSpoon {
 		return groups;
 	}
 
-	private static List<IGroupElement> getCoupling(CtModel model, List<IGroupElement> clusters) {
+	private static List<IGroupElement> getCoupling(StaticCallGraph graph, List<IGroupElement> clusters) {
 
 		List<IGroupElement> couplingList = new ArrayList<>();
 
@@ -41,7 +44,7 @@ public class ClusteringClassesSpoon {
 
 			List<IGroupElement> observedElement = new ArrayList<>();
 
-			int allCoupling = Coupling2classesSpoon.calculateCoupling(model);
+			int allCoupling = Coupling2classesSpoon.calculateCouplingSpoon(graph);
 
 			for (IGroupElement groupA : clusters) {
 				for (IGroupElement groupB : clusters) {
@@ -54,8 +57,8 @@ public class ClusteringClassesSpoon {
 
 							for (String classNameB : groupB.getClasses()) {
 
-								int coupling2classes = Coupling2classesSpoon.calculateNumerator(classNameA, classNameB,
-										model);
+								int coupling2classes = Coupling2classes.calculateNumerator(classNameA, classNameB,
+										graph);
 
 								coupling += (Double.valueOf(coupling2classes) / Double.valueOf(allCoupling)) * 100;
 							}
@@ -99,17 +102,19 @@ public class ClusteringClassesSpoon {
 	 * @param model Le modèle Spoon.
 	 * @return Le regroupement.
 	 */
-	public static IGroupElement createClusters(String projectPath) {
+	public static IGroupElement createClustersSpoon(String projectPath) {
 
 		// Creation de Spoon
 		Launcher spoon = new Launcher();
 		spoon.addInputResource(projectPath);
 
 		CtModel model = spoon.buildModel();
+		
+		StaticCallGraph graph = StaticCallGraph.createCallGraphSpoon(model);
 
-		List<IGroupElement> groupElements = getIGroupElements(model);
+		List<IGroupElement> groupElements = getIGroupElements(graph);
 
-		List<IGroupElement> possibleClusters = getCoupling(model, groupElements);
+		List<IGroupElement> possibleClusters = getCoupling(graph, groupElements);
 
 		while (groupElements.size() > 1) {
 
@@ -129,9 +134,10 @@ public class ClusteringClassesSpoon {
 			groupElements.removeAll(clusterToRemove);
 			groupElements.add(bestCouple);
 			System.out.println("Cluster : " + bestCouple.toString());
-			possibleClusters = getCoupling(model, groupElements);
+			possibleClusters = getCoupling(graph, groupElements);
 		}
-
+		
+		System.out.println("\n");
 		return groupElements.get(0);
 	}
 

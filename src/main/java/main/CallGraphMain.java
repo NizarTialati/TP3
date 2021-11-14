@@ -117,7 +117,7 @@ public class CallGraphMain extends AbstractMain {
 				
 			case "8":
 				System.out.println("\nStart Clustering ... \n");
-				ClusteringClassesSpoon.createClusters(TEST_PROJECT_PATH);
+				ClusteringClassesSpoon.createClustersSpoon(TEST_PROJECT_PATH);
 				break;
 			
 			case "9":
@@ -132,10 +132,11 @@ public class CallGraphMain extends AbstractMain {
 
 			default:
 				System.err.println("Sorry, wrong input. Please try again.");
-				sc.close();
 				return;
 			}
+			
 		} catch (IOException e) {
+			sc.close();
 			e.printStackTrace();
 		}
 	}

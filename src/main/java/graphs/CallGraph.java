@@ -21,12 +21,14 @@ import loggers.LogRequest;
 import loggers.StandardLogRequestLevel;
 import main.AbstractMain;
 import processors.ASTProcessor;
+import spoon.reflect.declaration.CtClass;
 import utility.Utility;
 
 public class CallGraph extends ASTProcessor {
 
 	/* ATTRIBUTES */
 	private Set<TypeDeclaration> classes = new HashSet<>();
+	private Set<CtClass<?>> classesSpoon = new HashSet<>();
 	private Set<String> nodes = new HashSet<String>();
 	private Map<String, Map<String, Integer>> invocations = new TreeMap<>();
 	private Map<MethodDeclaration, Set<Expression>> methodDeclarationsMap = new HashMap<>();
@@ -46,6 +48,10 @@ public class CallGraph extends ASTProcessor {
 
 	public Set<TypeDeclaration> getClasses() {
 		return classes;
+	}
+	
+	public Set<CtClass<?>> getClassesSpoon(){
+		return classesSpoon;
 	}
 
 	public Set<String> getNodes() {
@@ -84,6 +90,14 @@ public class CallGraph extends ASTProcessor {
 
 	public boolean addClasses(Set<TypeDeclaration> classes) {
 		return this.classes.addAll(classes);
+	}
+	
+	public boolean addClassSpoon(CtClass<?> cls) {
+		return classesSpoon.add(cls);
+	}
+
+	public boolean addClassesSpoon(Set<CtClass<?>> classes) {
+		return this.classesSpoon.addAll(classes);
 	}
 
 	public boolean addNode(String node) {

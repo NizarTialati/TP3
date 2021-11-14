@@ -11,7 +11,9 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 
 import spoon.reflect.CtModel;
 import spoon.reflect.code.CtInvocation;
-import spoon.reflect.code.CtSuperAccess;
+import spoon.reflect.declaration.CtClass;
+import spoon.reflect.declaration.CtConstructor;
+import spoon.reflect.declaration.CtEnum;
 import spoon.reflect.declaration.CtExecutable;
 import spoon.reflect.declaration.CtMethod;
 import spoon.reflect.declaration.CtType;
@@ -60,7 +62,7 @@ public class StaticCallGraph extends CallGraph {
 			graph.addInvocations(partial.getInvocations());
 			graph.addMethodDeclarationsMappings(partial.getMethodDeclarationsMap());
 		}
-
+		
 		return graph;
 	}
 
@@ -98,28 +100,28 @@ public class StaticCallGraph extends CallGraph {
 		return graph;
 	}
 
-	public static StaticCallGraph createCallGraphSpoon(String classA, CtModel model) {
-
+	public static StaticCallGraph createCallGraphSpoon(CtModel model) {
 		StaticCallGraph graph = new StaticCallGraph();
-
-		StaticCallGraph partial = new StaticCallGraph();
-
-		CtType<?> aClass = model.getAllTypes().stream().filter(cl -> cl.getReference().getSimpleName().equals(classA))
-				.findFirst().orElse(null);
-
-		if (aClass != null) {
-
-			for (CtMethod<?> m : aClass.getMethods()) {
-
-				partial.addMethodAndInvocationsSpoon(aClass, m);
+		
+		List<CtClass<?>> allClasses = model.getElements(new TypeFilter<>(CtClass.class));
+		
+		for(CtClass<?> c : allClasses) {
+			
+			if(c instanceof CtClass<?> && !(c instanceof CtEnum<?>))
+				graph.addClassSpoon(c);
+			
+			for(CtConstructor<?> cons : c.getConstructors()) {
+				graph.addConstructorAndInvocationsSpoon(c, cons);
 			}
-
-			graph.addNodes(partial.getNodes());
-			graph.addInvocations(partial.getInvocations());
-
+			
+			for(CtMethod<?> m : c.getMethods()) {
+				graph.addInvocationsSpoon(c, c.getQualifiedName()+"::"+m.getSimpleName(), m.getElements(new TypeFilter<>(CtInvocation.class)));
+			}
+			
 		}
-
+		
 		return graph;
+		
 	}
 
 	public boolean addMethodAndInvocationsSpoon(CtType<?> cls, CtMethod<?> method) {
@@ -129,21 +131,27 @@ public class StaticCallGraph extends CallGraph {
 
 			this.addNode(methodName);
 			List<CtInvocation<?>> invocationCollector = method.getElements(new TypeFilter<>(CtInvocation.class));
-			this.addInvocationsSpoon(cls, method, methodName, invocationCollector);
-
-//			for (CtInvocation<?> i : invocationCollector) {
-//				List<CtSuperAccess<?>> superInvocations = i.getElements(new TypeFilter<>(CtSuperAccess.class));
-//
-//				this.addSuperInvocationsSpoon(methodName, superInvocations);
-//			}
+			this.addInvocationsSpoon(cls, methodName, invocationCollector);
 
 		}
-
 		return method.getBody() != null;
 
 	}
+	
+	private boolean addConstructorAndInvocationsSpoon(CtClass<?> cls, CtConstructor<?> cons) {
+		if (cons.getBody() != null && cons.getElements(new TypeFilter<>(CtInvocation.class)).size()>1) {
+			
+			String constructorName = cls.getReference().getQualifiedName() + "::" + cons.getDeclaringType().getSimpleName();
+			this.addNode(constructorName);
+			List<CtInvocation<?>> invocationCollector = cons.getElements(new TypeFilter<>(CtInvocation.class));
+			this.addInvocationsSpoon(cls, constructorName, invocationCollector);
 
-	private void addInvocationsSpoon(CtType<?> cls, CtMethod<?> method, String methodName,
+		}
+		return cons.getBody() != null;
+		
+	}
+
+	private void addInvocationsSpoon(CtType<?> cls, String methodName,
 			List<CtInvocation<?>> invocationCollector) {
 
 		for (CtInvocation<?> invocation : invocationCollector) {
@@ -166,14 +174,6 @@ public class StaticCallGraph extends CallGraph {
 		}
 
 		return invocationName;
-	}
-
-	private void addSuperInvocationsSpoon(String methodName, List<CtSuperAccess<?>> invocationCollector) {
-		for (CtSuperAccess<?> superInvocation : invocationCollector) {
-			String superInvocationName = superInvocation.toString();
-			this.addNode(superInvocationName);
-			this.addInvocationSpoon(methodName, superInvocationName);
-		}
 	}
 
 	private boolean addInvocations(TypeDeclaration cls, MethodDeclaration methodDeclaration) {

@@ -1,18 +1,17 @@
 package exercice3;
 
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
 
+import exercice1.Coupling2classes;
 import graphs.StaticCallGraph;
 import spoon.Launcher;
 import spoon.reflect.CtModel;
+import spoon.reflect.declaration.CtClass;
 
 public class Coupling2classesSpoon {
 
 	public static void coupling2classesSpoon(String projectPath, String classA, String classB) {
+		
 		try {
 
 			System.out.println("Calculation in progress ...");
@@ -22,16 +21,18 @@ public class Coupling2classesSpoon {
 			spoon.addInputResource(projectPath);
 			
 			CtModel model = spoon.buildModel();
-
-			int coupling2classes = calculateNumerator(classA, classB, model);
-			int allCoupling = calculateCoupling(model);
+			
+			StaticCallGraph graph = StaticCallGraph.createCallGraphSpoon(model);
+			
+			int coupling2classes = Coupling2classes.calculateNumerator(classA, classB, graph);
+			int allCoupling = calculateCouplingSpoon(graph);
 
 			System.out.println("Number of relations between " + classA + " and " + classB + " : " + coupling2classes);
 			System.out.println("Number of total relation(s) : " + allCoupling);
 
 			double coupling = (Double.valueOf(coupling2classes) / Double.valueOf(allCoupling)) * 100;
 
-			System.out.println("Coupling metric : " + String.format("%.2f", coupling) + " %");
+			System.out.println("Coupling metric : " + String.format("%.3f", coupling) + " %\n\n");
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -39,61 +40,26 @@ public class Coupling2classesSpoon {
 
 	}
 
-
-	public static int calculateNumerator(String classA, String classB, CtModel model) throws IOException {
-		StaticCallGraph graphA = StaticCallGraph.createCallGraphSpoon(classA, model);
-		StaticCallGraph graphB = StaticCallGraph.createCallGraphSpoon(classB, model);
-		
-		
-		int res = 0;
-		for (Map<String, Integer> invocation : graphA.getInvocations().values()) {
-
-			for (String calledMethodName : invocation.keySet()) {
-				if (graphB.getNodes().stream().filter(m -> m.equals(calledMethodName)).collect(Collectors.toList()).size() > 0) {
-					res += invocation.get(calledMethodName);
-				}
-
-			}
-		}
-
-		for (Map<String, Integer> invocation : graphB.getInvocations().values()) {
-
-			for (String calledMethodName : invocation.keySet()) {
-				if (graphA.getNodes().stream().filter(m -> m.equals(calledMethodName)).collect(Collectors.toList()).size() > 0) {
-					res += invocation.get(calledMethodName);
-				}
-
-			}
-		}
-		
-		return res;
-	}
-
 	/**
-	 * Récupère les classes de l'application analysée.
-	 * 
-	 * @return La liste des noms des classes de l'application.
+	 * Calcule toutes les relations entre les classes avec Spoon.
+	 * @param graph Graphe d'appel
+	 * @return Le nombre de relation total.
+	 * @throws IOException
 	 */
-	public static List<String> getClassesSpoon(CtModel model) {
-
-		List<String> allClasses = new ArrayList<String>();
-
-		allClasses.addAll(
-				model.getAllTypes().stream().map(c -> c.getReference().getSimpleName()).collect(Collectors.toList()));
-
-		return allClasses;
-
-	}
-
-	public static int calculateCoupling(CtModel model) throws IOException {
+	public static int calculateCouplingSpoon(StaticCallGraph graph) throws IOException {
 		int res = 0;
-		for (String a : getClassesSpoon(model)) {
-			for (String b : getClassesSpoon(model)) {
-				if (!a.equals(b)) {
-					res += calculateNumerator(a, b, model);
+		for (CtClass<?> a : graph.getClassesSpoon()) {
+			
+			String classA = a.getQualifiedName();
+			for (CtClass<?> b : graph.getClassesSpoon()) {
+				
+				String classB = b.getQualifiedName();
+				if (!classA.equals(classB)) {
+					res += Coupling2classes.calculateNumerator(classA, classB, graph);
 				}
 			}
 		}
+
 		return res / 2;
 	}
 }

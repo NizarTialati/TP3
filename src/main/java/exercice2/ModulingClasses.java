@@ -1,5 +1,6 @@
 package exercice2;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Stack;
@@ -8,7 +9,13 @@ import exercice2.Models.IGroupElement;
 
 public class ModulingClasses {
 
-	public static void moduling(String projectPath) {
+	/**
+	 * Odentification des groupes de classes couplés (Exercice 2 - Question 2).
+	 * @param projectPath
+	 * @throws IOException
+	 */
+	public static void moduling(String projectPath) throws IOException {
+		
 		IGroupElement cluster = ClusteringClasses.createClusters(projectPath);
 
 		Stack<IGroupElement> stack = new Stack<>();
@@ -59,7 +66,7 @@ public class ModulingClasses {
 
 		}
 		
-		System.out.print("\n");
+		System.out.println("\n");
 	}
 
 }

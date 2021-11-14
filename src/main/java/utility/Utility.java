@@ -23,6 +23,7 @@ public class Utility {
 		return name;
 	}
 	
+	
 	public static String getMethodFullyQualifiedName(MethodDeclaration method) {
 		StringBuilder builder = new StringBuilder();
 		builder.append(getClassFullyQualifiedName((TypeDeclaration)method.getParent()));
